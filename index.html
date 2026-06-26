@@ -4,79 +4,107 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Einmal-Wort-Chat</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        #chat {
-            height: 300px;
-            border: 1px solid #ccc;
-            padding: 10px;
-            overflow-y: scroll;
-            margin-bottom: 10px;
-        }
-        #messageInput {
-            width: 70%;
-            padding: 8px;
-        }
-        #sendButton {
-            padding: 8px 15px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        .message {
-            margin-bottom: 10px;
-            padding: 8px;
-            border-bottom: 1px solid #eee;
-        }
-        .original {
-            color: #999;
-            font-size: 0.8em;
-        }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <h1>Einmal-Wort-Chat</h1>
-    <div id="chat"></div>
-    <input type="text" id="messageInput" placeholder="Gib eine Nachricht ein...">
-    <button id="sendButton">Senden</button>
+    <div class="app-container">
+        <header class="app-header">
+            <h1><i class="fas fa-comments"></i> Einmal-Wort-Chat</h1>
+            <button id="theme-toggle" class="theme-toggle">
+                <i class="fas fa-moon"></i>
+            </button>
+        </header>
+
+        <div class="chat-container">
+            <div id="chat" class="chat-messages">
+                <!-- Nachrichten werden hier dynamisch eingefügt -->
+                <div class="welcome-message">
+                    <p>Willkommen im <strong>Einmal-Wort-Chat</strong>! 🎉</p>
+                    <p>Jedes Wort kann nur <strong>einmal</strong> verwendet werden.</p>
+                </div>
+            </div>
+
+            <div class="input-area">
+                <input
+                    type="text"
+                    id="messageInput"
+                    placeholder="Gib eine Nachricht ein..."
+                    autocomplete="off"
+                >
+                <button id="sendButton" class="send-button">
+                    <i class="fas fa-paper-plane"></i> Senden
+                </button>
+            </div>
+        </div>
+    </div>
 
     <script>
         const ws = new WebSocket('ws://localhost:3000');
         const chat = document.getElementById('chat');
         const messageInput = document.getElementById('messageInput');
         const sendButton = document.getElementById('sendButton');
+        const themeToggle = document.getElementById('theme-toggle');
 
+        // Nachrichtenanimation
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
             if (data.type === 'chat') {
                 const messageElement = document.createElement('div');
                 messageElement.className = 'message';
                 messageElement.innerHTML = `
-                    <strong>Nachricht:</strong> ${data.text}<br>
-                    <span class="original">Original: ${data.original}</span>
+                    <div class="message-content">
+                        <p><strong>Nachricht:</strong> ${data.text}</p>
+                        <p class="original-message">Original: ${data.original}</p>
+                    </div>
                 `;
                 chat.appendChild(messageElement);
                 chat.scrollTop = chat.scrollHeight;
+
+                // Animation für neue Nachrichten
+                messageElement.style.opacity = '0';
+                messageElement.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    messageElement.style.transition = 'opacity 0.3s, transform 0.3s';
+                    messageElement.style.opacity = '1';
+                    messageElement.style.transform = 'translateY(0)';
+                }, 10);
             }
         };
 
+        ws.onopen = () => {
+            console.log('Verbindung zum WebSocket-Server hergestellt');
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket-Fehler:', error);
+        };
+
+        // Sende Nachricht
         sendButton.addEventListener('click', () => {
             const text = messageInput.value.trim();
             if (text) {
                 ws.send(JSON.stringify({ type: 'chat', text }));
                 messageInput.value = '';
+                messageInput.focus();
             }
         });
 
+        // Sende Nachricht mit Enter-Taste
         messageInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 sendButton.click();
+            }
+        });
+
+        // Dark/Light-Mode Toggle
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('dark-mode');
+            const icon = themeToggle.querySelector('i');
+            if (document.body.classList.contains('dark-mode')) {
+                icon.classList.replace('fa-moon', 'fa-sun');
+            } else {
+                icon.classList.replace('fa-sun', 'fa-moon');
             }
         });
     </script>
