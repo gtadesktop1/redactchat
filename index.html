@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Einmal-Wort-Chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        #chat {
+            height: 300px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+        }
+        #messageInput {
+            width: 70%;
+            padding: 8px;
+        }
+        #sendButton {
+            padding: 8px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+        }
+        .original {
+            color: #999;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <h1>Einmal-Wort-Chat</h1>
+    <div id="chat"></div>
+    <input type="text" id="messageInput" placeholder="Gib eine Nachricht ein...">
+    <button id="sendButton">Senden</button>
+
+    <script>
+        const ws = new WebSocket('ws://localhost:3000');
+        const chat = document.getElementById('chat');
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendButton');
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'chat') {
+                const messageElement = document.createElement('div');
+                messageElement.className = 'message';
+                messageElement.innerHTML = `
+                    <strong>Nachricht:</strong> ${data.text}<br>
+                    <span class="original">Original: ${data.original}</span>
+                `;
+                chat.appendChild(messageElement);
+                chat.scrollTop = chat.scrollHeight;
+            }
+        };
+
+        sendButton.addEventListener('click', () => {
+            const text = messageInput.value.trim();
+            if (text) {
+                ws.send(JSON.stringify({ type: 'chat', text }));
+                messageInput.value = '';
+            }
+        });
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendButton.click();
+            }
+        });
+    </script>
+</body>
+</html>
